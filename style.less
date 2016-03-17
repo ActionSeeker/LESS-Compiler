@@ -1,0 +1,70 @@
+@color:#ffeedd;
+@size:100px;
+.circle(){
+  background:red;
+  color:green;
+}
+
+.clean{
+  clear:both;
+}
+
+#big-circle{
+  color:green;
+  text-decoration:underline;
+  .clean{
+    color:@color;
+  }
+  color:gray;
+  #red{
+    color:red;
+  }
+  color:blue;
+}
+
+#small-circle{
+color:yellow;
+@size:102px;
+size:@size;
+.circle;
+.clean;
+#aber();
+}
+
+mango,a{
+  color:@color;
+}
+
+#aber{
+  color:blue;
+  .aber{
+    color:red;
+    li{
+      background:gray;
+    }
+    br{
+      clear:both;
+    }
+    .other(){
+      color:green;
+    }
+  }
+  color:green !important;
+}
+
+//This comment is useless
+ul{
+  /*And so is this one*/
+  color:blue;
+  background:url('/images/a.jpg'); //and so is this comment
+  li{
+    transform-origin: bottom;
+    div{
+      text-decoration: none;
+      color:red;
+      a{
+        transform: rotate(90deg);
+      }
+    }
+  }
+}
