@@ -1,9 +1,11 @@
+.apple{
+	height: -10.2px;}
 .clean{
-	clear: both;}
+	clear: both;	color: #EEF;}
 #big-circle{
 	color: green;	text-decoration: underline;	color: blue;}
 #small-circle{
-	color: yellow;	size: @size;	background: red;	color: green;	clear: both;	color: blue;	color: green!important;}
+	color: yellow;	size: @size;	background: red;	color: green;	cursor: @variable;	clear: both;	color: #EEF;	color: blue;	color: green!important;}
 mango,a{
 	color: @color;}
 #aber{
@@ -25,4 +27,4 @@ ul li{
 ul li div{
 	text-decoration: none;	color: red;}
 ul li div a{
-	transform: rotate(90deg);}
+	transform: rotate(-87.00000000000001deg);}

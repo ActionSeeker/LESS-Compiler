@@ -2,12 +2,80 @@ fs = require('fs')
 less = require('less')
 var parser = new(less.Parser);
 var XRegExp = require('xregexp');
+var stack = require('stackjs');
+var math = require('mathjs');
+
+var variableRegex = /@[a-z][a-z0-9\-]*[\s]*[:][\s]*[\@a-z0-9#"",]*[\s]*[;]/gi
+
+function eval(expression){
+
+  if(expression[0]=='#'){
+    if(expression.length != 4 && expression.length!=7){
+      throw new Error("Hex value error in "+expression+". Will be printed as it is");
+    }
+  }
+  //check for expression
+  var hasLength, hasDegree, hasTime = true;
+
+  lengthRegex = /cm|px|em|mm|m|inch/
+  degreeRegex = /deg|rad|grad/
+  timeRegex = /s|h|hr|mins|hours|hour|minutes/
+  numberRegex = /[0-9][0-9.]*/
+
+  if(numberRegex.test(expression) == false){
+    return expression;
+  }
+
+  rotateRegex = /rotate/
+
+  rotateFunction = false;
+
+  if(rotateRegex.test(expression)){
+    rotateFunction = true;
+  }
+
+  expression = expression.replace(/px/,"cm");
+  expression = expression.replace(/rotate/,"");
+
+  hasLength = lengthRegex.test(expression);
+  hasDegree = degreeRegex.test(expression);
+  hasTime = timeRegex.test(expression);
+
+  if(hasLength&&hasDegree || hasLength&&hasTime || hasDegree&&hasTime){
+    throw new Error("Incompatible types of operands in "+expression);
+    return expression;
+  }
+
+  else{
+    var _exp = math.parse(expression);
+    _exp = _exp.compile().eval();
+    //console.log(_exp.value);
+    var unit = '';
+    if(hasLength){
+      unit = 'px';
+      _exp.value = _exp.value*100;
+    }
+    else if(hasDegree){
+      unit = 'deg';
+      _exp.value = _exp.value*180/math.PI;
+    }
+    else if(hasTime){
+      unit = 's';
+    }
+    if(rotateFunction){
+      return 'rotate('+_exp.value+unit+')';
+    }
+    return _exp.value+unit;
+  }
+
+}
 
 var VariableInfo = function(name,value){
   this.name = name,
   this.value = value,
   this.parent =  null,
-  this.index = 0;
+  this.index = 0,
+  this.type = 'simple'
 }
 
 VariableInfo.prototype.eval = function(){
@@ -21,15 +89,6 @@ VariableInfo.prototype.setParent = function() {
 
 };
 
-colorFunctions = {
-  rgb:function(r,g,b){
-    return colorFunctions.rgba(r, g, b, 1.0);
-  },
-  rgba:function(r,g,b,a){
-    return 1;
-  }
-};
-
 var CSSproperty = function(nameValue){
   if(nameValue.trim()=='')return null;
   name = nameValue.split(':')[0];
@@ -38,6 +97,11 @@ var CSSproperty = function(nameValue){
   this.name = name;
   this.value = value;
 }
+
+CSSproperty.prototype.evaluate = function () {
+  //Evaluate the CSS property
+  this.value = eval(this.value);
+};
 
 var Class = function(name){
   this.name = name;
@@ -211,7 +275,7 @@ fs.readFile('style.less','utf8',function(err,data){
 
   parseVariables(data);
 
-  var data = data.replace(/[@][a-z][a-z0-9\-]*[\s]*[:][\s]*[a-z0-9#]*[\s]*[;]/gi,"")
+  var data = data.replace(variableRegex,"")
 
   var classNames = XRegExp.matchRecursive(data,'{','}',"gi",{valueNames: ['className', null, 'classDef', null]});
 
@@ -267,7 +331,23 @@ fs.readFile('style.less','utf8',function(err,data){
     subClassTable[i].sanitizeCSSProperty();
   }
 
+  for(var i = 0;i<basicClassTable.length;i++){
+    var _CSS = basicClassTable[i].CSSproperty;
+    for(var j = 0;j<_CSS.length;j++){
+      _CSS[j].evaluate();
+    }
+  }
+
+  for(var i = 0;i<subClassTable.length;i++){
+    var _CSS = subClassTable[i].CSSproperty;
+    for(var j = 0;j<_CSS.length;j++){
+      _CSS[j].evaluate();
+    }
+  }
+
   prettyPrintCSS();
+
+  extract('@list',3);
 
   fs.writeFile('style.css',propertyString,function(err,data){
     if(err){
@@ -317,15 +397,61 @@ function parseVariables(file){
   /*Extract variable information from the file*/
   /*Extract two kinds of variables : ones that are done globally, and the ones that are in the scope*/
   /*This one is for the global variables*/
-  variableRegex = /@[a-z][a-z0-9\-]*[\s]*[:][\s]*[a-z0-9#]*[\s]*[;]*/gi
   while( (result = variableRegex.exec(file)) ){
     varDelim = result[0].split(';')[0];
     name = varDelim.split(':')[0];
     value = varDelim.split(':')[1];
     variable = new VariableInfo(name,value);
     variable.index = result['index'];
-    variable.eval();
+    variable.value = eval(variable.value);
     symbolTable.push(variable);
   }
-  //console.log(symbolTable);
+
+  for(var i = 0;i<symbolTable.length;i++){
+    //check if it is an array
+    var commaCount = (symbolTable[i].value.match(/,/g) || []).length;
+    if(commaCount >= 1){
+      //create a new instance of array for this one
+      var _fragments = symbolTable[i].value.split(',');
+      for(var j = 0;j<_fragments.length;j++){
+        _fragments[j] = _fragments[j].replace(/\"/gi,"");
+      }
+      symbolTable[i].value = _fragments;
+      symbolTable[i].type = 'array';
+    }
+  }
+}
+
+/*Array functions */
+
+function getArrayObject(variableName){
+  for(var i = 0;i<symbolTable.length;i++){
+    if(symbolTable[i].type=='array' && symbolTable[i].name == variableName){
+      return symbolTable[i].value;
+    }
+  }
+  return null;
+}
+
+function length(variable){
+  var getArray = getArrayObject(variable);
+  if(getArray == null)return 0;
+  else return getArray.length;
+}
+
+
+
+function extract(variable,index){
+  _array = getArrayObject(variable);
+  if(typeof _array === "object" && _array!=null){
+    //i.e. is an array
+    if(index>_array.length){
+      throw new Error("Index greater than its length");
+    }
+    else return _array[index];
+  }
+  else{
+    throw new Error("Using extract on wrong item.");
+    return null;
+  }
 }

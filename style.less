@@ -1,12 +1,24 @@
 @color:#ffeedd;
 @size:100px;
+
+@list:"banana","mango","orange","apple";
+
 .circle(){
   background:red;
   color:green;
+  @variable:@a;
+  @a:900px;
+  cursor:@variable;
 }
+
+.apple{
+  height:-15.2cm+5cm;
+}
+
 
 .clean{
   clear:both;
+  color:#EEF;
 }
 
 #big-circle{
@@ -63,7 +75,7 @@ ul{
       text-decoration: none;
       color:red;
       a{
-        transform: rotate(90deg);
+        transform: rotate(90deg/2-132deg);
       }
     }
   }
