@@ -8,7 +8,6 @@ var math = require('mathjs');
 var variableRegex = /@[a-z][a-z0-9\-]*[\s]*[:][\s]*[\@a-z0-9#"",]*[\s]*[;]/gi
 
 function eval(expression){
-
   if(expression[0]=='#'){
     if(expression.length != 4 && expression.length!=7){
       throw new Error("Hex value error in "+expression+". Will be printed as it is");
@@ -164,7 +163,14 @@ Class.prototype.sanitizeCSSProperty = function(){
   for(var i = 0;i<_CSS.length;i++)
   {
     var obj = _CSS[i];
+    tempObj = '';
+    if(obj){
+      tempObj = obj.value.replace(/[\s]*/,"");
+    }
     if(typeof obj.name == "undefined" && typeof obj.value == "undefined"){
+      _CSS.splice(i,1);
+    }
+    else if(tempObj[0]=='@'){
       _CSS.splice(i,1);
     }
     else{
@@ -176,16 +182,32 @@ Class.prototype.sanitizeCSSProperty = function(){
       }
     }
   }
+  _CSS.reverse();
+  for(var i = 0;i<_CSS.length;i++){
+    for(var j = i+1;j<_CSS.length;j++){
+      if(_CSS[i].name == _CSS[j].name){
+        _CSS.splice(j,1);
+        --j;
+      }
+    }
+  }
+  _CSS.reverse();
   this.CSSproperty = _CSS;
 }
 
 Class.prototype.CSSChange = function (variableName, variableValue) {
   console.log(variableName);
   console.log(variableValue);
-  variableValue = eval(variableValue);
   for(i = 0;i<this.CSSproperty.length;i++){
-    if(this.CSSproperty[i].value == variableName){
-      this.CSSproperty[i].value = variableValue;
+    var propertyRegex = new RegExp(variableName);
+    if(propertyRegex.test(this.CSSproperty[i].value)){
+      var insertString = this.CSSproperty[i].name+':'+variableValue;
+      if(/rotate/.test(this.CSSproperty[i].value)){
+        insertString = this.CSSproperty[i].name+':'+'rotate('+variableValue+')';
+      }
+      var CSSPropertyToBeInserted = new CSSproperty(insertString);
+      CSSPropertyToBeInserted.evaluate();
+      this.CSSproperty.push(CSSPropertyToBeInserted);
     }
   }
 };
@@ -245,7 +267,6 @@ function extractSubClass(_classObject){
     }
   }
 }
-
 
 function isEmptyObject(obj){
   return Object.keys(obj).length === 0 && JSON.stringify(obj) === JSON.stringify({});
@@ -374,6 +395,7 @@ fs.readFile('style.less','utf8',function(err,data){
         if(getMixinArgs){
           getMixinArgs = getMixinArgs.split(',');
           var _getObject = getObject(mixinName);
+
           for(var k = 0;k<getMixinArgs.length;k++){
             getMixinArgs[k] = getMixinArgs[k].replace(/\"/g,"");
             getMixinArgs[k] = getMixinArgs[k].replace(/\'/g,"");
@@ -410,7 +432,6 @@ fs.readFile('style.less','utf8',function(err,data){
           //create the table on the fly
           //Add values of dummy variables
           //This is a temporary fix
-          console.log(_getObject);
         }
         if(_getObject){
           basicClassTable[i].CSSproperty = basicClassTable[i].CSSproperty.concat(_getObject.CSSproperty);
@@ -514,6 +535,7 @@ function parseVariables(file){
       var _fragments = symbolTable[i].value.split(',');
       for(var j = 0;j<_fragments.length;j++){
         _fragments[j] = _fragments[j].replace(/\"/gi,"");
+        _fragments[j] = _fragments[j].replace(/\'/gi,"");
       }
       symbolTable[i].value = _fragments;
       symbolTable[i].type = 'array';

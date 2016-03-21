@@ -1,21 +1,23 @@
+.bandana{
+	size: 45px;	color: #abc;	border: 2px 2px 4px 5px  ;	transform: rotate(45deg);}
 .apple{
-	height: -5.199999999999999px;	border: 4.666666666666666px solid black ;	border-style: dotted ;	size: 20px;	color: #AAA;	border: 3px 2px 1px 4px   ;}
+	height: -5.199999999999999px;	border-style: dotted ;	size: 20px;	color: #AAA;	border: 3cm 2px 1px 4px   ;}
 .clean{
-	clear: both;	color: #EEF;}
+	clear: both;	color: #EEF;	transform: rotate(145.44000000000003deg);}
 #big-circle{
-	color: green;	text-decoration: underline;	color: blue;}
+	text-decoration: underline;	color: blue;}
 #small-circle{
-	color: yellow;	size: @size;	size: 20px;	color: #AAA;	border: 3px 2px 1px 4px   ;}
+	color: yellow;	transform: rotate(@angle);}
 mango,a{
-	color: @color;}
+}
 #aber{
-	color: blue;	color: green !important;}
+	color: green !important;}
 ul{
 	color: blue;	background: url('/images/a.jpg');}
 .apple:after{
 	clear: both;}
 #big-circle .clean{
-	color: @color;}
+}
 #big-circle #red{
 	color: red;}
 #aber .aber{

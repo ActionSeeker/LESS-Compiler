@@ -11,10 +11,19 @@
   cursor:@variable;
 }
 
+.bandana{
+  .coloredBox('45px');
+  .degreeRotate('45deg');
+}
+
 .coloredBox(@size,@color:#abc,@dim:'2px 2px 4px 5px'){
   size:@size;
   color:@color;
   border:@dim;
+}
+
+.degreeRotate(@angle){
+  transform:rotate(@angle);
 }
 
 .apple{
@@ -24,13 +33,14 @@
   &:after{
     clear:both;
   }
-  .coloredBox('25cm - 5cm','#AAA','3px 2px 1px 4px');
+  .coloredBox('25cm - 5cm','#AAA','3cm 2px 1px 4px');
 }
 
 
 .clean{
   clear:both;
   color:#EEF;
+  .degreeRotate('90deg*2-34.56deg');
 }
 
 #big-circle{
