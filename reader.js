@@ -196,8 +196,6 @@ Class.prototype.sanitizeCSSProperty = function(){
 }
 
 Class.prototype.CSSChange = function (variableName, variableValue) {
-  console.log(variableName);
-  console.log(variableValue);
   for(i = 0;i<this.CSSproperty.length;i++){
     var propertyRegex = new RegExp(variableName);
     if(propertyRegex.test(this.CSSproperty[i].value)){
@@ -424,17 +422,33 @@ fs.readFile('style.less','utf8',function(err,data){
   for(var i = 0;i<subClassTable.length;i++){
     if(subClassTable[i].mixinClasses.length >=1){
       //push these object properties to CSS
-      var array = basicClassTable[i].mixinClasses;
+      var array = subClassTable[i].mixinClasses;
       for(var j = 0;j<array.length;j++){
         array[j] = array[j].replace(/\(.*\)/,"");
         var _getObject = getObject(array[j]);
-        if(_getObject){
-          //create the table on the fly
-          //Add values of dummy variables
-          //This is a temporary fix
+        getMixinArgs = XRegExp.matchRecursive(array[j],'\\(','\\)',"gi")[0];
+        if(getMixinArgs){
+          getMixinArgs = getMixinArgs.split(',');
+          var _getObject = getObject(mixinName);
+
+          for(var k = 0;k<getMixinArgs.length;k++){
+            getMixinArgs[k] = getMixinArgs[k].replace(/\"/g,"");
+            getMixinArgs[k] = getMixinArgs[k].replace(/\'/g,"");
+          }
+          if(_getObject && getMixinArgs.length>=1 && _getObject.argumentTable.length>=1){
+            //Then fill this table on the fly
+            for(var k = 0;k<_getObject.argumentTable.length && k < getMixinArgs.length;k++){
+              //console.log(_getObject.argumentTable[k]);
+              _getObject.argumentTable[k].value = getMixinArgs[k];
+            }
+            //Now reflect these changes in the CSS table of the _getObject
+            for(var k = 0;k<_getObject.argumentTable.length;k++){
+              _getObject.CSSChange(_getObject.argumentTable[k].name,_getObject.argumentTable[k].value);//variableName, value
+            }
+          }
         }
         if(_getObject){
-          basicClassTable[i].CSSproperty = basicClassTable[i].CSSproperty.concat(_getObject.CSSproperty);
+          subClassTable[i].CSSproperty = subClassTable[i].CSSproperty.concat(_getObject.CSSproperty);
         }
       }
     }

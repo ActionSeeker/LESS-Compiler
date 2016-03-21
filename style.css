@@ -15,7 +15,7 @@ mango,a{
 ul{
 	color: blue;	background: url('/images/a.jpg');}
 .apple:after{
-	clear: both;}
+	clear: both;	transform: rotate(145.44000000000003deg);}
 #big-circle .clean{
 }
 #big-circle #red{
