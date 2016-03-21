@@ -122,7 +122,7 @@ CSSproperty.prototype.evaluate = function () {
 var Class = function(name){
   this.name = name;
   this.nameShortened = name.replace(/\(.*\)/,"");
-  this.arguments = XRegExp.matchRecursive(name,'\\(','\\)',"gi");
+  this.arguments = XRegExp.matchRecursive(name,'\\(','\\)',"gi")[0];
   this.fullname = name;
   this.fullClassDef = '';
   this.included = true;
@@ -131,6 +131,7 @@ var Class = function(name){
   this.startIndex = 0;
   this.endIndex = 0;
   this.mixinClasses = [];
+  this.argumentTable = [];
 }
 
 Class.prototype.getFullName = function(){
@@ -140,7 +141,13 @@ Class.prototype.getFullName = function(){
 
 Class.prototype.addName = function(Class) {
   //Adds to the full qualified name of the class of given class object
-   this.fullname = Class.getFullName() + ' '+this.name;
+  if(this.name[0] == '&'){
+    this.name = this.name.replace(/&:/,"");
+    this.fullname = Class.getFullName()+':'+this.name;
+  }
+  else{
+    this.fullname = Class.getFullName() + ' '+this.name;
+  }
 };
 
 Class.prototype.isIncluded = function(boolean){
@@ -171,6 +178,17 @@ Class.prototype.sanitizeCSSProperty = function(){
   }
   this.CSSproperty = _CSS;
 }
+
+Class.prototype.CSSChange = function (variableName, variableValue) {
+  console.log(variableName);
+  console.log(variableValue);
+  variableValue = eval(variableValue);
+  for(i = 0;i<this.CSSproperty.length;i++){
+    if(this.CSSproperty[i].value == variableName){
+      this.CSSproperty[i].value = variableValue;
+    }
+  }
+};
 
 function getObject(name){
   for(var k = 0;k<basicClassTable.length;k++){
@@ -236,7 +254,7 @@ function isEmptyObject(obj){
 function extractCSSProperties(_classObject){
   var data = _classObject.fullClassDef;
   var subClassesCSS = XRegExp.matchRecursive(data,'{','}',"gi",{valueNames: ['className', null, 'classDef', null]});
-  var subClassRegex = /[\.#a-z][a-z0-9\-]*[\(.*\)]*\{[;]*.*\}/gi
+  var subClassRegex = /[\.#a-z&][:a-z0-9\-]*[\(.*\)]*\{[;]*.*\}/gi
   if(subClassesCSS.length==1){
     CSSString = subClassesCSS[0].value;
     CSSString = CSSString.split(';');
@@ -315,19 +333,71 @@ fs.readFile('style.less','utf8',function(err,data){
     extractCSSProperties(subClassTable[i]);
   }
 
+  //Extract the argument table
+
+  for(var i = 0;i<basicClassTable.length;i++){
+    //fill the argument table
+    if(basicClassTable[i].arguments){
+      _tempArgs = basicClassTable[i].arguments.split(",");
+      //_tempArgs is now an array
+      for(var j = 0;j<_tempArgs.length;j++){
+        if(/:/.test(_tempArgs[j])){
+          var _var = _tempArgs[j].split(':');
+          _var[0] = _var[0].replace(/[\s]*/g,"");
+          _var[1] = _var[1].replace(/\'/gi,"");
+          basicClassTable[i].argumentTable.push(new VariableInfo(_var[0],_var[1]));
+        }
+        else{
+          basicClassTable[i].argumentTable.push(new VariableInfo(_tempArgs[j],null));
+        }
+      }
+    }
+  }
+
+  /*for(var i = 0;i<basicClassTable.length;i++){
+    //Extract mixin arguments
+    if(basicClassTable[i].mixinClasses.length >= 1){
+      var array = basicClassTable[i].mixinClasses;
+      for(var j = 0;j<array.length;j++){
+        var arguments = XRegExp.matchRecursive(array[j], '\\(', '\\)', 'gi');
+      }
+    }
+  }*/
+
   for(var i = 0;i<basicClassTable.length;i++){
     if(basicClassTable[i].mixinClasses.length >= 1){
       //push these object properties to CSS
       var array = basicClassTable[i].mixinClasses;
       for(var j = 0;j<array.length;j++){
-        array[j] = array[j].replace(/\(.*\)/,"")
-        var _getObject = getObject(array[j]);
+        mixinName = array[j].replace(/\(.*\)/,"")
+        getMixinArgs = XRegExp.matchRecursive(array[j],'\\(','\\)',"gi")[0];
+        if(getMixinArgs){
+          getMixinArgs = getMixinArgs.split(',');
+          var _getObject = getObject(mixinName);
+          for(var k = 0;k<getMixinArgs.length;k++){
+            getMixinArgs[k] = getMixinArgs[k].replace(/\"/g,"");
+            getMixinArgs[k] = getMixinArgs[k].replace(/\'/g,"");
+          }
+          if(_getObject && getMixinArgs.length>=1 && _getObject.argumentTable.length>=1){
+            //Then fill this table on the fly
+            for(var k = 0;k<_getObject.argumentTable.length && k < getMixinArgs.length;k++){
+              //console.log(_getObject.argumentTable[k]);
+              _getObject.argumentTable[k].value = getMixinArgs[k];
+            }
+            //Now reflect these changes in the CSS table of the _getObject
+            for(var k = 0;k<_getObject.argumentTable.length;k++){
+              _getObject.CSSChange(_getObject.argumentTable[k].name,_getObject.argumentTable[k].value);//variableName, value
+            }
+          }
+        }
         if(_getObject){
           basicClassTable[i].CSSproperty = basicClassTable[i].CSSproperty.concat(_getObject.CSSproperty);
         }
       }
     }
   }
+
+  //Mixin arguments
 
   for(var i = 0;i<subClassTable.length;i++){
     if(subClassTable[i].mixinClasses.length >=1){
@@ -336,6 +406,12 @@ fs.readFile('style.less','utf8',function(err,data){
       for(var j = 0;j<array.length;j++){
         array[j] = array[j].replace(/\(.*\)/,"");
         var _getObject = getObject(array[j]);
+        if(_getObject){
+          //create the table on the fly
+          //Add values of dummy variables
+          //This is a temporary fix
+          console.log(_getObject);
+        }
         if(_getObject){
           basicClassTable[i].CSSproperty = basicClassTable[i].CSSproperty.concat(_getObject.CSSproperty);
         }

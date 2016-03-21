@@ -11,10 +11,20 @@
   cursor:@variable;
 }
 
+.coloredBox(@size,@color:#abc,@dim:'2px 2px 4px 5px'){
+  size:@size;
+  color:@color;
+  border:@dim;
+}
+
 .apple{
   height:-15.2cm+5cm*2;
   border:2cm*3-4cm/3 solid black;
   border-style:dotted;
+  &:after{
+    clear:both;
+  }
+  .coloredBox('25cm - 5cm','#AAA','3px 2px 1px 4px');
 }
 
 

@@ -1,18 +1,19 @@
 .apple{
-	height: -5.199999999999999px;	border: 4.666666666666666px solid black ;	border-style: dotted ;
-}
+	height: -5.199999999999999px;	border: 4.666666666666666px solid black ;	border-style: dotted ;	size: 20px;	color: #AAA;	border: 3px 2px 1px 4px   ;}
 .clean{
 	clear: both;	color: #EEF;}
 #big-circle{
 	color: green;	text-decoration: underline;	color: blue;}
 #small-circle{
-	color: yellow;	size: @size;	background: red;	color: green;	cursor: @variable;	clear: both;	color: #EEF;	color: blue;	color: green !important;}
+	color: yellow;	size: @size;	size: 20px;	color: #AAA;	border: 3px 2px 1px 4px   ;}
 mango,a{
 	color: @color;}
 #aber{
 	color: blue;	color: green !important;}
 ul{
 	color: blue;	background: url('/images/a.jpg');}
+.apple:after{
+	clear: both;}
 #big-circle .clean{
 	color: @color;}
 #big-circle #red{
