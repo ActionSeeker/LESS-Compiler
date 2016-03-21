@@ -21,8 +21,13 @@ function eval(expression){
   degreeRegex = /deg|rad|grad/
   timeRegex = /s|h|hr|mins|hours|hour|minutes/
   numberRegex = /[0-9][0-9.]*/
+  signRegex = /\+|\-|\*|\//
 
   if(numberRegex.test(expression) == false){
+    return expression;
+  }
+
+  if(signRegex.test(expression) == false){
     return expression;
   }
 
@@ -42,10 +47,9 @@ function eval(expression){
   hasTime = timeRegex.test(expression);
 
   if(hasLength&&hasDegree || hasLength&&hasTime || hasDegree&&hasTime){
-    throw new Error("Incompatible types of operands in "+expression);
+    //throw new Error("Incompatible types of operands in "+expression);
     return expression;
   }
-
   else{
     var _exp = math.parse(expression);
     _exp = _exp.compile().eval();
@@ -67,7 +71,6 @@ function eval(expression){
     }
     return _exp.value+unit;
   }
-
 }
 
 var VariableInfo = function(name,value){
@@ -100,7 +103,20 @@ var CSSproperty = function(nameValue){
 
 CSSproperty.prototype.evaluate = function () {
   //Evaluate the CSS property
-  this.value = eval(this.value);
+  borderRegex = /border[\-]*.*/
+  if(borderRegex.test(this.name) == true){
+    //means a border property
+    valueArray = this.value.split(" ");
+    answerString = '';
+    for(var j = 0;j<valueArray.length;j++){
+      answerString += eval(valueArray[j]);
+      answerString += ' ';
+    }
+    this.value = answerString;
+  }
+  else{
+    this.value = eval(this.value);
+  }
 };
 
 var Class = function(name){
@@ -199,6 +215,7 @@ function extractSubClass(_classObject){
       var name = subClassNames[i].value;
       var CSSPropertyRegex = /(.+?):(.+?);/gi;
       name = name.replace(CSSPropertyRegex,"");
+      name = name.replace(/[\s]*/,"");
       var def = subClassNames[i+1];
       if(name.trim()!='' && def['name']=='classDef'){
         var _subClassObject = createClassObject(name,def.value,def['start'],def['end']);
@@ -269,7 +286,9 @@ fs.readFile('style.less','utf8',function(err,data){
 
   data = finalLines;
 
-  data = data.replace(/[\r\n|\r|\n|\s|\t|\v]*/gi,"");
+  data = data.replace(/[\r\n|\r|\n|\t|\v]*/gi,"");
+
+  data = data.replace(/[\s]{2,}/g,"");
 
   data = data.replace(/\/\*.*\*\//gi,"");
 
@@ -296,9 +315,6 @@ fs.readFile('style.less','utf8',function(err,data){
     extractCSSProperties(subClassTable[i]);
   }
 
-  //console.log(basicClassTable);
-  //console.log(subClassTable);
-
   for(var i = 0;i<basicClassTable.length;i++){
     if(basicClassTable[i].mixinClasses.length >= 1){
       //push these object properties to CSS
@@ -306,7 +322,9 @@ fs.readFile('style.less','utf8',function(err,data){
       for(var j = 0;j<array.length;j++){
         array[j] = array[j].replace(/\(.*\)/,"")
         var _getObject = getObject(array[j]);
-        basicClassTable[i].CSSproperty = basicClassTable[i].CSSproperty.concat(_getObject.CSSproperty);
+        if(_getObject){
+          basicClassTable[i].CSSproperty = basicClassTable[i].CSSproperty.concat(_getObject.CSSproperty);
+        }
       }
     }
   }
@@ -318,7 +336,9 @@ fs.readFile('style.less','utf8',function(err,data){
       for(var j = 0;j<array.length;j++){
         array[j] = array[j].replace(/\(.*\)/,"");
         var _getObject = getObject(array[j]);
-        basicClassTable[i].CSSproperty = basicClassTable[i].CSSproperty.concat(_getObject.CSSproperty);
+        if(_getObject){
+          basicClassTable[i].CSSproperty = basicClassTable[i].CSSproperty.concat(_getObject.CSSproperty);
+        }
       }
     }
   }
@@ -345,9 +365,12 @@ fs.readFile('style.less','utf8',function(err,data){
     }
   }
 
+  //console.log(basicClassTable);
+  //console.log(subClassTable);
+
   prettyPrintCSS();
 
-  extract('@list',3);
+  //console.log(extract('@list',3));
 
   fs.writeFile('style.css',propertyString,function(err,data){
     if(err){
@@ -420,6 +443,9 @@ function parseVariables(file){
       symbolTable[i].type = 'array';
     }
   }
+
+  //console.log(symbolTable);
+
 }
 
 /*Array functions */
