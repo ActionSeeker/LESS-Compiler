@@ -4,23 +4,120 @@ var parser = new(less.Parser);
 var XRegExp = require('xregexp');
 var stack = require('stackjs');
 var math = require('mathjs');
+var colors = require('./colors.js');
 
 var variableRegex = /@[a-z][a-z0-9\-]*[\s]*[:][\s]*[\@a-z0-9#"",]*[\s]*[;]/gi
+
+var rotateRegex = /rotate|rotateX|rotate3d|rotateY|rotateZ/
+
+
+//console.log(colors.hslToRgb(225,.23,.34));
+
+function colorArgs(arguments){
+  for(var i = 0;i<arguments.length;i++){
+    arguments[i] = arguments[i].replace(/\'/gi,"");
+    if(/%/.test(arguments[i]) == true){
+      arguments[i] = parseFloat(arguments[i])/100;
+    }
+    arguments[i] = eval(arguments[i]);
+  }
+  for(var i = 0;i<arguments.length;i++){
+    arguments[i] = parseFloat(arguments[i]);
+  }
+  if(arguments.length>3){
+    err = new Error("HSL cannot have more than three arguments");
+    throw err;
+  }
+  return arguments;
+}
 
 function eval(expression){
   if(expression[0]=='#'){
     if(expression.length != 4 && expression.length!=7){
-      throw new Error("Hex value error in "+expression+". Will be printed as it is");
+      err = new Error("Hex value error in "+expression+". Will be printed as it is");
+      throw err;
     }
   }
   //check for expression
   var hasLength, hasDegree, hasTime = true;
+
 
   lengthRegex = /cm|px|em|mm|m|inch/
   degreeRegex = /deg|rad|grad/
   timeRegex = /s|h|hr|mins|hours|hour|minutes/
   numberRegex = /[0-9][0-9.]*/
   signRegex = /\+|\-|\*|\//
+
+  //Function Regexes begin
+
+  saturateRegex = /saturate(.*)/
+  spinRegex = /spin(.*)/
+  hslRegex = /hsl\(.+?\)/
+
+  if(saturateRegex.test(expression) == true){
+    //Has to be of the HSL in the first
+    if(hslRegex.test(expression) == true){
+      hslValue = hslRegex.exec(expression)[0];
+      var hexValue = eval(hslValue);
+      expression = expression.replace(/hsl\(.+?\)/,hexValue);
+    }
+    var arguments = /\(.*\)/.exec(expression)[0];
+    arguments = arguments.replace("(","");
+    arguments = arguments.replace(")","");
+    arguments = arguments.split(',');
+    //First value is a HEX number, second is a percentage
+    arguments[0] = arguments[0].replace("\'","");
+    arguments[1] = arguments[1].replace("\'","");
+    //That HEX can be returned by any function in arguments[0]
+    arguments[0] = eval(arguments[0]);
+    if(/%/.test(arguments[1]) == true){
+      arguments[1] = parseFloat(arguments[1])/100;
+    }
+    arguments[1] = parseFloat(arguments[1]);
+    var RGB = colors.ColorLuminance(arguments[0],arguments[1]);
+    return RGB;
+  }
+
+  else if(spinRegex.test(expression) == true){
+    //Has hsl color as an argument
+    hslValue = hslRegex.exec(expression)[0];
+    hslArgs = hslValue;
+    var arguments = /\(.*\)/.exec(hslArgs)[0];
+    arguments = arguments.replace("(","");
+    arguments = arguments.replace(")","");
+    arguments = arguments.split(',');
+    arguments = colorArgs(arguments);
+    newExpression = expression.replace(hslRegex,"-");
+    var spinAngle = parseFloat(newExpression.split(",")[1]);
+    arguments[0] = (arguments[0]+spinAngle+360.0)%360;
+    //console.log(arguments);
+    var RGB = colors.hslToRgb(arguments);
+    var returnString = colors.RGBtoHex(RGB);
+    return returnString;
+  }
+
+  else if(hslRegex.test(expression) == true){
+    //send the hexadecimal value
+    var arguments = XRegExp.matchRecursive(expression,'\\(','\\)',"gi")[0];
+    arguments = arguments.split(',');
+    for(var i = 0;i<arguments.length;i++){
+      arguments[i] = arguments[i].replace(/\'/g,"");
+      if(/%/.test(arguments[i]) == true){
+        arguments[i] = parseFloat(arguments[i])/100;
+      }
+      arguments[i] = eval(arguments[i]);
+    }
+    for(var i = 0;i<arguments.length;i++){
+      arguments[i] = parseFloat(arguments[i]);
+    }
+    if(arguments.length>3){
+      err = new Error("HSL cannot have more than three arguments");
+      throw err;
+    }
+    var RGB = colors.hslToRgb(arguments);
+    var returnString = colors.RGBtoHex(RGB);
+    return returnString;
+  }
 
   if(numberRegex.test(expression) == false){
     return expression;
@@ -30,16 +127,28 @@ function eval(expression){
     return expression;
   }
 
-  rotateRegex = /rotate/
-
   rotateFunction = false;
 
+  rotateResult = '';
+
+  importantRegex = /\!important/
+
   if(rotateRegex.test(expression)){
+    rotateResult = rotateRegex.exec(expression)[0];
+    //console.log(rotateResult);
     rotateFunction = true;
   }
 
+  importantAdd = false;
+
+  if(importantRegex.test(expression)){
+    importantAdd = true;
+  }
+
+  expression = expression.replace(importantRegex,"");
+
   expression = expression.replace(/px/,"cm");
-  expression = expression.replace(/rotate/,"");
+  expression = expression.replace(rotateRegex,"");
 
   hasLength = lengthRegex.test(expression);
   hasDegree = degreeRegex.test(expression);
@@ -66,8 +175,15 @@ function eval(expression){
       unit = 's';
     }
     if(rotateFunction){
-      return 'rotate('+_exp.value+unit+')';
+      if(importantAdd){
+        return rotateResult+'('+_exp.value+unit+') !important';
+      }
+      else{
+        return rotateResult+'('+_exp.value+unit+')';
+      }
     }
+    if(importantAdd == true)
+      return _exp.value+unit+' !important';
     return _exp.value+unit;
   }
 }
@@ -114,6 +230,7 @@ CSSproperty.prototype.evaluate = function () {
     this.value = answerString;
   }
   else{
+    //console.log(this.value);
     this.value = eval(this.value);
   }
 };
@@ -131,11 +248,40 @@ var Class = function(name){
   this.endIndex = 0;
   this.mixinClasses = [];
   this.argumentTable = [];
+  this.condition = this.setCondition(XRegExp.matchRecursive(name,'\\(','\\)',"gi")); //To be used for When Clause
 }
 
 Class.prototype.getFullName = function(){
   //Gets the full qualified name of a class that would appear in the CSS file
   return this.fullname;
+}
+
+Class.prototype.setCondition = function(regexAnswerTable){
+  if(regexAnswerTable.length == 2){
+    return regexAnswerTable[1];
+  }
+  else{
+    return '';
+  }
+}
+
+Class.prototype.checkCondition = function(){
+  //check it against the argument value
+  var conditionString = this.condition;
+  if(this.condition == '')
+  {
+    //This implies there is no condition
+    return true;
+  }
+  var variableNames = /@[a-z][a-z0-9]*/gi.exec(conditionString);
+  //Refer to the symbol table for the value
+  var value = [];
+  for(var i = 0;i<variableNames.length;i++){
+    //value.push(getVariableValue(variableNames[0]));
+  }
+  var parseResult = true;//math.parse(conditionString).compile().eval();
+  //console.log(parseResult);
+  return parseResult;
 }
 
 Class.prototype.addName = function(Class) {
@@ -195,20 +341,30 @@ Class.prototype.sanitizeCSSProperty = function(){
   this.CSSproperty = _CSS;
 }
 
+function newString(string){
+  var resultString = '';
+  for(var i = 0;i<string.length;i++){
+    resultString += string[i];
+  }
+  return resultString;
+}
+
 Class.prototype.CSSChange = function (variableName, variableValue) {
   for(i = 0;i<this.CSSproperty.length;i++){
     var propertyRegex = new RegExp(variableName);
+    var newValue = newString(this.CSSproperty[i].value);
     if(propertyRegex.test(this.CSSproperty[i].value)){
-      var insertString = this.CSSproperty[i].name+':'+variableValue;
-      if(/rotate/.test(this.CSSproperty[i].value)){
-        insertString = this.CSSproperty[i].name+':'+'rotate('+variableValue+')';
+      //console.log(this.CSSproperty[i].value);
+      var insertString = this.CSSproperty[i].name+':'+newValue.replace(propertyRegex,variableValue);
+      if(rotateRegex.test(this.CSSproperty[i].value)){
+        insertString = this.CSSproperty[i].name+':'+newValue.replace(propertyRegex,variableValue);
       }
       var CSSPropertyToBeInserted = new CSSproperty(insertString);
       CSSPropertyToBeInserted.evaluate();
       this.CSSproperty.push(CSSPropertyToBeInserted);
     }
   }
-};
+}
 
 function getObject(name){
   for(var k = 0;k<basicClassTable.length;k++){
@@ -373,16 +529,6 @@ fs.readFile('style.less','utf8',function(err,data){
     }
   }
 
-  /*for(var i = 0;i<basicClassTable.length;i++){
-    //Extract mixin arguments
-    if(basicClassTable[i].mixinClasses.length >= 1){
-      var array = basicClassTable[i].mixinClasses;
-      for(var j = 0;j<array.length;j++){
-        var arguments = XRegExp.matchRecursive(array[j], '\\(', '\\)', 'gi');
-      }
-    }
-  }*/
-
   for(var i = 0;i<basicClassTable.length;i++){
     if(basicClassTable[i].mixinClasses.length >= 1){
       //push these object properties to CSS
@@ -393,7 +539,6 @@ fs.readFile('style.less','utf8',function(err,data){
         if(getMixinArgs){
           getMixinArgs = getMixinArgs.split(',');
           var _getObject = getObject(mixinName);
-
           for(var k = 0;k<getMixinArgs.length;k++){
             getMixinArgs[k] = getMixinArgs[k].replace(/\"/g,"");
             getMixinArgs[k] = getMixinArgs[k].replace(/\'/g,"");
@@ -404,6 +549,8 @@ fs.readFile('style.less','utf8',function(err,data){
               //console.log(_getObject.argumentTable[k]);
               _getObject.argumentTable[k].value = getMixinArgs[k];
             }
+            //console.log(_getObject);
+            //console.log(getMixinArgs);
             //Now reflect these changes in the CSS table of the _getObject
             for(var k = 0;k<_getObject.argumentTable.length;k++){
               _getObject.CSSChange(_getObject.argumentTable[k].name,_getObject.argumentTable[k].value);//variableName, value
@@ -411,7 +558,10 @@ fs.readFile('style.less','utf8',function(err,data){
           }
         }
         if(_getObject){
-          basicClassTable[i].CSSproperty = basicClassTable[i].CSSproperty.concat(_getObject.CSSproperty);
+          if(_getObject.checkCondition() == true)
+          {
+            basicClassTable[i].CSSproperty = basicClassTable[i].CSSproperty.concat(_getObject.CSSproperty);
+          }
         }
       }
     }
@@ -448,7 +598,11 @@ fs.readFile('style.less','utf8',function(err,data){
           }
         }
         if(_getObject){
-          subClassTable[i].CSSproperty = subClassTable[i].CSSproperty.concat(_getObject.CSSproperty);
+          //check for conditions here
+          if(_getObject.checkCondition() == true)
+          {
+            subClassTable[i].CSSproperty = subClassTable[i].CSSproperty.concat(_getObject.CSSproperty);
+          }
         }
       }
     }
@@ -475,6 +629,10 @@ fs.readFile('style.less','utf8',function(err,data){
       _CSS[j].evaluate();
     }
   }
+
+  /*for(var i = 0;i<basicClassTable.length;i++){
+    console.log(basicClassTable[i].condition);
+  }*/
 
   //console.log(basicClassTable);
   //console.log(subClassTable);
@@ -584,12 +742,14 @@ function extract(variable,index){
   if(typeof _array === "object" && _array!=null){
     //i.e. is an array
     if(index>_array.length){
-      throw new Error("Index greater than its length");
+      err = Error("Index greater than its length");
+      throw new err;
     }
     else return _array[index];
   }
   else{
-    throw new Error("Using extract on wrong item.");
+    err = Error("Using extract on wrong item.")
+    throw new err;
     return null;
   }
 }

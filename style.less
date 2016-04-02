@@ -11,9 +11,48 @@
   cursor:@variable;
 }
 
+.angular{
+  transform:rotate(10deg*2/5);
+}
+
+.colorTest{
+  color:hsl(195, 45%, .60);
+  background:hsl(195, 45%, .60);
+}
+
+.saturateTest{
+  color:saturate(hsl(195, 45%, .60),20%);
+  background:saturate(hsl(195, 45%, .60),20%);
+}
+
+.desaturateTest{
+  color:saturate(hsl(195, 45%, .60),-10%);
+  background:saturate(hsl(120, 5%, .10),-90%);
+}
+
+.spinTest{
+  color:spin(hsl(10, 90%, 50%),30);
+  background:spin(hsl(195, 45%, .60),180);
+}
+
+.conditionTest(@size) when (@size<43cm){
+    size:@size;
+}
+
+.loop(@size) when (@number<43cm){
+  .loop(@number+1cm);
+  width:@number;
+}
+
+.trialTest{
+  .conditionTest('43px');
+  .loop(40cm);
+}
+
+
 .bandana{
   .coloredBox('45px');
-  .degreeRotate('45deg');
+  .degreeRotate('45deg/2');
 }
 
 .coloredBox(@size,@color:#abc,@dim:'2px 2px 4px 5px'){
@@ -23,7 +62,7 @@
 }
 
 .degreeRotate(@angle){
-  transform:rotate(@angle);
+  transform:rotate(@angle/10);
 }
 
 .apple{
@@ -32,16 +71,17 @@
   border-style:dotted;
   &:after{
     clear:both;
-    .degreeRotate('45deg+2deg');
+    .degreeRotate('45deg');
   }
   .coloredBox('25cm - 5cm','#AAA','3cm 2px 1px 4px');
+  .degreeRotate('9deg');
 }
 
 
 .clean{
   clear:both;
   color:#EEF;
-  .degreeRotate('90deg*2-34.56deg');
+  .degreeRotate('(90deg*2-34.56deg)');
 }
 
 #big-circle{
@@ -63,6 +103,7 @@ color:yellow;
 size:@size;
 .circle;
 .clean;
+transform:rotateY(4deg);
 #aber();
 }
 
