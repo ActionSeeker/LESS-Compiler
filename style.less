@@ -1,7 +1,9 @@
 @color:#ffeedd;
-@size:100px;
-
+@size:102px;
+@var : @size + @size*2;
 @list:"banana","mango","orange","apple";
+@number:320px;
+@bigger:12000px;
 
 .circle(){
   background:red;
@@ -9,6 +11,23 @@
   @variable:@a;
   @a:900px;
   cursor:@variable;
+}
+
+.inherit{
+  .circle;
+}
+
+.lightenExample{
+    color:lighten(hsl(195, 45%, .60),4%);
+}
+
+.darkenExample{
+  color:darken(hsl(195, 45%, .60),4%);
+}
+
+.withHex{
+  color:saturate(#a4b3ac,50%);
+  background:rgba(34,45,5,80%);
 }
 
 .angular{
@@ -39,16 +58,17 @@
     size:@size;
 }
 
-.loop(@size) when (@number<43cm){
-  .loop(@number+1cm);
-  width:@number;
+.complexCondition(@x) when (@x+@var>10px+@bigger){
+  color:black;
 }
 
 .trialTest{
   .conditionTest('43px');
-  .loop(40cm);
 }
 
+.complexTrial{
+  .complexCondition('2px');
+}
 
 .bandana{
   .coloredBox('45px');

@@ -5,13 +5,12 @@ var XRegExp = require('xregexp');
 var stack = require('stackjs');
 var math = require('mathjs');
 var colors = require('./colors.js');
+var chalk = require('chalk');
 
-var variableRegex = /@[a-z][a-z0-9\-]*[\s]*[:][\s]*[\@a-z0-9#"",]*[\s]*[;]/gi
+var variableRegex = /@[a-z][a-z0-9\-\_]*[\s]*[:][@#a-z0-9\s*+-/.\(\)\"\,\']*[;]/gi
+varNameRegex = /@[a-z][a-z0-9\-\_]*/gi;
 
-var rotateRegex = /rotate|rotateX|rotate3d|rotateY|rotateZ/
-
-
-//console.log(colors.hslToRgb(225,.23,.34));
+var rotateRegex = /rotateX|rotate3d|rotateY|rotateZ|rotate/
 
 function colorArgs(arguments){
   for(var i = 0;i<arguments.length;i++){
@@ -24,8 +23,8 @@ function colorArgs(arguments){
   for(var i = 0;i<arguments.length;i++){
     arguments[i] = parseFloat(arguments[i]);
   }
-  if(arguments.length>3){
-    err = new Error("HSL cannot have more than three arguments");
+  if(arguments.length>4){
+    err = new Error("HSL/RGBA cannot have more than three arguments");
     throw err;
   }
   return arguments;
@@ -41,18 +40,73 @@ function eval(expression){
   //check for expression
   var hasLength, hasDegree, hasTime = true;
 
-
   lengthRegex = /cm|px|em|mm|m|inch/
   degreeRegex = /deg|rad|grad/
   timeRegex = /s|h|hr|mins|hours|hour|minutes/
   numberRegex = /[0-9][0-9.]*/
-  signRegex = /\+|\-|\*|\//
+  signRegex = /\+|\-|\*|\/|<|>|<=|>=/
 
   //Function Regexes begin
 
   saturateRegex = /saturate(.*)/
   spinRegex = /spin(.*)/
   hslRegex = /hsl\(.+?\)/
+  rgbaRegex = /rgba(.+?)/
+  rgbRegex = /rgb(.+?)/
+  hueRegex = /hue\(.+?\)/
+
+  lightenRegex = /lighten\(.+?\)/
+  darkenRegex = /darken\(.+?\)/
+
+
+  if(rgbaRegex.test(expression) == true){
+    rgbaValue = /\(.*\)/.exec(expression)[0];
+    rgbaValue = rgbaValue.replace("(","");
+    rgbaValue = rgbaValue.replace(")","");
+    rgbaArray = rgbaValue.split(",");
+    rgbaArray = colorArgs(rgbaArray);
+    red = rgbaArray[0];
+    green = rgbaArray[1];
+    blue = rgbaArray[2];
+    alpha = rgbaArray[3];
+    return 'rgba('+red+','+green+','+blue+','+alpha+')';
+  }
+
+  if(lightenRegex.test(expression) == true){
+    var arguments = XRegExp.matchRecursive(expression,'\\(','\\)',"gi")[0];
+    if(hslRegex.test(arguments) == true){
+      hslValue = hslRegex.exec(arguments)[0];
+      hslValue = XRegExp.matchRecursive(arguments,'\\(','\\)',"gi")[0];
+      hslValue = hslValue.split(",");
+      hslValue = colorArgs(hslValue);
+      arguments = arguments.replace(/hsl\(.+?\)/,"-");
+      arguments = arguments.split(",")[1];
+      if(/%/.test(arguments) == true){
+        arguments = parseFloat(arguments)/100;
+      }
+      arguments = parseFloat(arguments);
+      var lightColor = colors.lighten(hslValue,arguments);
+      return lightColor;
+    }
+  }
+
+  if(darkenRegex.test(expression) == true){
+    var arguments = XRegExp.matchRecursive(expression,'\\(','\\)',"gi")[0];
+    if(hslRegex.test(arguments) == true){
+      hslValue = hslRegex.exec(arguments)[0];
+      hslValue = XRegExp.matchRecursive(arguments,'\\(','\\)',"gi")[0];
+      hslValue = hslValue.split(",");
+      hslValue = colorArgs(hslValue);
+      arguments = arguments.replace(/hsl\(.+?\)/,"-");
+      arguments = arguments.split(",")[1];
+      if(/%/.test(arguments) == true){
+        arguments = parseFloat(arguments)/100;
+      }
+      arguments = parseFloat(arguments);
+      var darkColor = colors.darken(hslValue,arguments);
+      return darkColor;
+    }
+  }
 
   if(saturateRegex.test(expression) == true){
     //Has to be of the HSL in the first
@@ -60,6 +114,10 @@ function eval(expression){
       hslValue = hslRegex.exec(expression)[0];
       var hexValue = eval(hslValue);
       expression = expression.replace(/hsl\(.+?\)/,hexValue);
+    }
+
+    if(hueRegex.test(expression == true)){
+      //console.log(hueRegex);
     }
     var arguments = /\(.*\)/.exec(expression)[0];
     arguments = arguments.replace("(","");
@@ -96,10 +154,18 @@ function eval(expression){
     return returnString;
   }
 
-  else if(hslRegex.test(expression) == true){
+  if(hslRegex.test(expression) == true){
     //send the hexadecimal value
     var arguments = XRegExp.matchRecursive(expression,'\\(','\\)',"gi")[0];
+    if(hueRegex.test(arguments) == true){
+      var hueArguments = XRegExp.matchRecursive(arguments,'\\(','\\)',"gi")[0]
+      var hue = eval('hue('+hueArguments+')');
+      arguments = arguments.replace('hue('+hueArguments+')',hue);
+    }
     arguments = arguments.split(',');
+    //gives us of form hue,saturation,lightness
+    arguments[0] = arguments[0].replace('hsl(',"");
+    arguments[arguments.length-1].replace(')',"");
     for(var i = 0;i<arguments.length;i++){
       arguments[i] = arguments[i].replace(/\'/g,"");
       if(/%/.test(arguments[i]) == true){
@@ -108,9 +174,10 @@ function eval(expression){
       arguments[i] = eval(arguments[i]);
     }
     for(var i = 0;i<arguments.length;i++){
-      arguments[i] = parseFloat(arguments[i]);
+      if(isNaN(parseFloat(arguments[i])) == false)
+        arguments[i] = parseFloat(arguments[i]);
     }
-    if(arguments.length>3){
+    if(arguments.length>4){
       err = new Error("HSL cannot have more than three arguments");
       throw err;
     }
@@ -119,6 +186,22 @@ function eval(expression){
     return returnString;
   }
 
+  if(hueRegex.test(expression) == true){
+      //expression is of form of either HSL or RGB format
+      hueArgument = XRegExp.matchRecursive(expression,'\\(','\\)',"gi")[0];
+      if(hslRegex.test(hueArgument) == true){
+        var hueArgument = XRegExp.matchRecursive(hueArgument,'\\(','\\)',"gi")[0];
+        var hueArgument = colorArgs(hueArgument.split(","));
+        return hueArgument[0];
+      }
+      else if(rgbRegex.test(hueArgument) == true || rgbaRegex.test(hueArgument) == true){
+        var rgbArgument = XRegExp.matchRecursive(hueArgument,'\\(','\\)',"gi")[0];
+        var rgbArgument = colorArgs(rgbArgument.split(","));
+        var hue = colors.hue(rgbArgument);
+        return hue;
+      }
+    }
+
   if(numberRegex.test(expression) == false){
     return expression;
   }
@@ -126,6 +209,8 @@ function eval(expression){
   if(signRegex.test(expression) == false){
     return expression;
   }
+
+  var compareRegex = />=|<=|<|>/i;
 
   rotateFunction = false;
 
@@ -147,7 +232,7 @@ function eval(expression){
 
   expression = expression.replace(importantRegex,"");
 
-  expression = expression.replace(/px/,"cm");
+  expression = expression.replace(/px/gi,"cm");
   expression = expression.replace(rotateRegex,"");
 
   hasLength = lengthRegex.test(expression);
@@ -159,6 +244,11 @@ function eval(expression){
     return expression;
   }
   else{
+    if(compareRegex.test(expression) == true){
+      var _exp = math.parse(expression);
+      _exp = _exp.compile().eval();
+      return _exp;
+    }
     var _exp = math.parse(expression);
     _exp = _exp.compile().eval();
     //console.log(_exp.value);
@@ -191,21 +281,11 @@ function eval(expression){
 var VariableInfo = function(name,value){
   this.name = name,
   this.value = value,
+  this.evaluated = 0,
   this.parent =  null,
   this.index = 0,
   this.type = 'simple'
 }
-
-VariableInfo.prototype.eval = function(){
-  //Basically evaluate the this.value here, need to refer to less documentation
-  //check if it is already evaluated or not
-  //if not, then evaluate it
-  //run a regex over the value, perhaps?
-}
-
-VariableInfo.prototype.setParent = function() {
-
-};
 
 var CSSproperty = function(nameValue){
   if(nameValue.trim()=='')return null;
@@ -268,14 +348,11 @@ Class.prototype.setCondition = function(regexAnswerTable){
 Class.prototype.checkCondition = function(){
   //check it against the argument value
   var conditionString = this.condition;
-  if(this.condition == '')
-  {
-    //This implies there is no condition
+  if(this.condition.trim() == ''){
+    //i.e. there is no condition
     return true;
   }
-  var variableNames = /@[a-z][a-z0-9]*/gi.exec(conditionString);
-  //Refer to the symbol table for the value
-  var value = [];
+  var variableNames = /@[a-z][_a-z0-9-]*/gi.exec(conditionString);
   for(var i = 0;i<variableNames.length;i++){
     //value.push(getVariableValue(variableNames[0]));
   }
@@ -314,9 +391,6 @@ Class.prototype.sanitizeCSSProperty = function(){
       tempObj = obj.value.replace(/[\s]*/,"");
     }
     if(typeof obj.name == "undefined" && typeof obj.value == "undefined"){
-      _CSS.splice(i,1);
-    }
-    else if(tempObj[0]=='@'){
       _CSS.splice(i,1);
     }
     else{
@@ -429,12 +503,13 @@ function isEmptyObject(obj){
 function extractCSSProperties(_classObject){
   var data = _classObject.fullClassDef;
   var subClassesCSS = XRegExp.matchRecursive(data,'{','}',"gi",{valueNames: ['className', null, 'classDef', null]});
-  var subClassRegex = /[\.#a-z&][:a-z0-9\-]*[\(.*\)]*\{[;]*.*\}/gi
+  var subClassRegex = /[\.#a-z&][:a-z0-9\-]*[\(.*\)]*\{[@;]*.*\}/gi
   if(subClassesCSS.length==1){
     CSSString = subClassesCSS[0].value;
     CSSString = CSSString.split(';');
     for(var j = 0;j<CSSString.length-1;j++){
       var property = new CSSproperty(CSSString[j]);
+      //console.log(property);
       if(isEmptyObject(property)==false) _classObject.addCSSProperty(property);
       else _classObject.mixinClasses.push(CSSString[j]);
     }
@@ -458,7 +533,13 @@ fs.readFile('style.less','utf8',function(err,data){
   fullFile = data;
   parser.parse(fullFile,function(err,tree){
     if(err){
-      console.log(err);
+      var errorThrow = new Error(chalk.red("Preprocessor Compiler Error"));
+      console.log(chalk.red("There is an error."))
+      console.log(chalk.blue("Error type : ")+err.type);
+      console.log(chalk.blue("Error message : ")+err.message);
+      console.log(chalk.blue("Error location : Index "+err.index+", Line ")+err.line);
+      console.log(chalk.green('-------------------------------------------'));
+      throw errorThrow;
     }
     else{
 
@@ -533,12 +614,14 @@ fs.readFile('style.less','utf8',function(err,data){
     if(basicClassTable[i].mixinClasses.length >= 1){
       //push these object properties to CSS
       var array = basicClassTable[i].mixinClasses;
+      var bracketRegex = /(.*)/
       for(var j = 0;j<array.length;j++){
-        mixinName = array[j].replace(/\(.*\)/,"")
+        mixinName = array[j].replace(/\(.*\)/,"");
         getMixinArgs = XRegExp.matchRecursive(array[j],'\\(','\\)',"gi")[0];
+        _getObject = getObject(mixinName);
+        var checkedCondition = true
         if(getMixinArgs){
           getMixinArgs = getMixinArgs.split(',');
-          var _getObject = getObject(mixinName);
           for(var k = 0;k<getMixinArgs.length;k++){
             getMixinArgs[k] = getMixinArgs[k].replace(/\"/g,"");
             getMixinArgs[k] = getMixinArgs[k].replace(/\'/g,"");
@@ -549,16 +632,38 @@ fs.readFile('style.less','utf8',function(err,data){
               //console.log(_getObject.argumentTable[k]);
               _getObject.argumentTable[k].value = getMixinArgs[k];
             }
-            //console.log(_getObject);
-            //console.log(getMixinArgs);
             //Now reflect these changes in the CSS table of the _getObject
             for(var k = 0;k<_getObject.argumentTable.length;k++){
               _getObject.CSSChange(_getObject.argumentTable[k].name,_getObject.argumentTable[k].value);//variableName, value
             }
+
+            var argArray = _getObject.argumentTable;
+
+            if(_getObject.condition.trim() != ''){
+              var expression = newString(_getObject.condition);
+              //substitute values from the table
+              while ((result = varNameRegex.exec(expression))){
+                var value = findFromArgs(argArray,result[0]);
+                if(value == null){
+                  value = findSymbol(result[0]);
+                }
+                if(value == null){
+                  var errVar = new Error(chalk.red("Variable named ")+result[0]+chalk.red(" not defined !"));
+                  throw errVar;
+                }
+                expression = expression.replace(result[0],value.value);
+              }
+              checkedCondition = eval(expression);
+            }
           }
         }
+        else{
+          //Case when there are no mixin arguments
+          //Add CSS properties directly
+          _getObject = getObject(mixinName);
+        }
         if(_getObject){
-          if(_getObject.checkCondition() == true)
+          if(checkedCondition == true)
           {
             basicClassTable[i].CSSproperty = basicClassTable[i].CSSproperty.concat(_getObject.CSSproperty);
           }
@@ -577,10 +682,10 @@ fs.readFile('style.less','utf8',function(err,data){
         array[j] = array[j].replace(/\(.*\)/,"");
         var _getObject = getObject(array[j]);
         getMixinArgs = XRegExp.matchRecursive(array[j],'\\(','\\)',"gi")[0];
+        var _getObject = getObject(mixinName);
+        var checkedCondition = true;
         if(getMixinArgs){
           getMixinArgs = getMixinArgs.split(',');
-          var _getObject = getObject(mixinName);
-
           for(var k = 0;k<getMixinArgs.length;k++){
             getMixinArgs[k] = getMixinArgs[k].replace(/\"/g,"");
             getMixinArgs[k] = getMixinArgs[k].replace(/\'/g,"");
@@ -595,11 +700,34 @@ fs.readFile('style.less','utf8',function(err,data){
             for(var k = 0;k<_getObject.argumentTable.length;k++){
               _getObject.CSSChange(_getObject.argumentTable[k].name,_getObject.argumentTable[k].value);//variableName, value
             }
+
+            var argArray = _getObject.argumentTable;
+
+            if(_getObject.condition.trim() != ''){
+              var expression = newString(_getObject.condition);
+              //substitute values from the table
+              //console.log(expression);
+              while ((result = varNameRegex.exec(expression))){
+                var value = findFromArgs(argArray,result[0]);
+                if(value == null){
+                  value = findSymbol(result[0]);
+                }
+                if(value == null){
+                  var errVar = new Error(chalk.red("Variable named ")+result[0]+chalk.red(" not defined !"));
+                  throw errVar;
+                }
+                expression = expression.replace(result[0],value.value);
+              }
+              checkedCondition = eval(expression);
+            }
           }
+        }
+        else{
+            _getObject = getObject(mixinName);
         }
         if(_getObject){
           //check for conditions here
-          if(_getObject.checkCondition() == true)
+          if(checkedCondition == true)
           {
             subClassTable[i].CSSproperty = subClassTable[i].CSSproperty.concat(_getObject.CSSproperty);
           }
@@ -616,6 +744,24 @@ fs.readFile('style.less','utf8',function(err,data){
     subClassTable[i].sanitizeCSSProperty();
   }
 
+  //console.log(basicClassTable);
+
+  for(var i = 0;i<basicClassTable.length;i++){
+    //extract the variables out of expressions
+    var CSSChart = basicClassTable[i].CSSproperty;
+    for(var j = 0;j<CSSChart.length;j++){
+      CSSChart[j].value = solveCSSProperties(CSSChart[j].value);
+    }
+  }
+
+  for(var i = 0;i<subClassTable.length;i++){
+    //extract the variables out of expressions
+    var CSSChart = subClassTable[i].CSSproperty;
+    for(var j = 0;j<CSSChart.length;j++){
+      CSSChart[j].value = solveCSSProperties(CSSChart[j].value);
+    }
+  }
+
   for(var i = 0;i<basicClassTable.length;i++){
     var _CSS = basicClassTable[i].CSSproperty;
     for(var j = 0;j<_CSS.length;j++){
@@ -630,30 +776,37 @@ fs.readFile('style.less','utf8',function(err,data){
     }
   }
 
-  /*for(var i = 0;i<basicClassTable.length;i++){
-    console.log(basicClassTable[i].condition);
-  }*/
-
   //console.log(basicClassTable);
-  //console.log(subClassTable);
 
   prettyPrintCSS();
 
-  //console.log(extract('@list',3));
-
   fs.writeFile('style.css',propertyString,function(err,data){
     if(err){
+      console.log("There is an error in writing to file.");
       console.log(err);
       console.log(data);
     }
   })
-
 });
 
+function solveCSSProperties(CSSPropValue){
+  var expression = newString(CSSPropValue);
+  var tempExpression = newString(CSSPropValue);
+  var someVariables  = false;
+  while((result = varNameRegex.exec(expression))){
+    someVariables = true;
+    var variableInfo = findSymbol(result[0]);
+    if(variableInfo)tempExpression = tempExpression.replace(result[0],variableInfo.value);
+  }
+  if(someVariables == false)
+    tempExpression = CSSPropValue;
+  var evaluatedExpression = tempExpression;
+  return evaluatedExpression;
+}
 
 function prettyPrintCSS(){
   for(var i = 0;i<basicClassTable.length;i++){
-    if(basicClassTable[i].included){
+    if(basicClassTable[i].included && basicClassTable[i].CSSproperty.length >=1){
       var _classString = '';
       _classString += basicClassTable[i].fullname;
       _classString += '{\r\n';
@@ -668,7 +821,7 @@ function prettyPrintCSS(){
   }
 
   for(var i = 0;i<subClassTable.length;i++){
-    if(subClassTable[i].included){
+    if(subClassTable[i].included && subClassTable[i].CSSproperty.length >=1){
       var _classString = '';
       _classString += subClassTable[i].fullname;
       _classString += '{\r\n';
@@ -683,8 +836,6 @@ function prettyPrintCSS(){
   }
 }
 
-
-
 function parseVariables(file){
   /*Extract variable information from the file*/
   /*Extract two kinds of variables : ones that are done globally, and the ones that are in the scope*/
@@ -692,10 +843,10 @@ function parseVariables(file){
   while( (result = variableRegex.exec(file)) ){
     varDelim = result[0].split(';')[0];
     name = varDelim.split(':')[0];
+    name = name.replace(/\s/gi,"");
     value = varDelim.split(':')[1];
     variable = new VariableInfo(name,value);
     variable.index = result['index'];
-    variable.value = eval(variable.value);
     symbolTable.push(variable);
   }
 
@@ -711,11 +862,48 @@ function parseVariables(file){
       }
       symbolTable[i].value = _fragments;
       symbolTable[i].type = 'array';
+      symbolTable[i].evaluated = _fragments;
     }
+  }
+
+  varNameRegex = /@[a-z][a-z0-9\-\_]*/gi;
+  for(var i = 0;i<symbolTable.length;i++){
+    //extract the variables out of expressions
+    var expression = newString(symbolTable[i].value);
+    var tempExpression = newString(symbolTable[i].value);
+    //console.log(expression);
+    var someVariables  = false;
+    while((result = varNameRegex.exec(expression))){
+      someVariables = true;
+      var variableInfo = findSymbol(result[0]);
+      tempExpression = tempExpression.replace(result[0],variableInfo.value);
+    }
+    if(someVariables == false)
+      tempExpression = symbolTable[i].value;
+    var evaluatedExpression = eval(tempExpression);
+    symbolTable[i].value = evaluatedExpression;
   }
 
   //console.log(symbolTable);
 
+}
+
+function findFromArgs(argTable,name){
+  for(var i = 0;i<argTable.length;i++){
+    if(argTable[i].name == name)
+    {
+      return argTable[i];
+    }
+  }
+}
+
+function findSymbol(symbolName){
+  for(var i = 0;i<symbolTable.length;i++){
+    if(symbolTable[i].name == symbolName)
+    {
+      return symbolTable[i];
+    }
+  }
 }
 
 /*Array functions */
@@ -734,8 +922,6 @@ function length(variable){
   if(getArray == null)return 0;
   else return getArray.length;
 }
-
-
 
 function extract(variable,index){
   _array = getArrayObject(variable);

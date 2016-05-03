@@ -1,3 +1,11 @@
+.inherit{
+	background: red;	color: green;	cursor: 900px;}
+.lightenExample{
+	color: #7ab8cd;}
+.darkenExample{
+	color: #5ca8c1;}
+.withHex{
+	color: #f6ffff;	background: rgba(34,45,5,0.8);}
 .angular{
 	transform: rotate(4deg);}
 .colorTest{
@@ -8,8 +16,6 @@
 	color: #609eb3;	background: #020302;}
 .spinTest{
 	color: #f2a60d;	background: #c7826b;}
-.trialTest{
-	size: 43px;	width: @number;}
 .bandana{
 	size: 45px;	color: #abc;	border: 2px 2px 4px 5px  ;	transform: rotate(2.25deg);}
 .apple{
@@ -19,17 +25,17 @@
 #big-circle{
 	text-decoration: underline;	color: blue;}
 #small-circle{
-	color: yellow;	transform: rotate(14.544deg);}
+	size: 102px;	background: red;	cursor: 900px;	clear: both;	transform: rotate(14.544deg);	color: green !important;}
 mango,a{
-}
+	color: #ffeedd;}
 #aber{
 	color: green !important;}
 ul{
 	color: blue;	background: url('/images/a.jpg');}
 .apple:after{
-	clear: both;	transform: rotate(14.544deg);}
+	clear: both;	color: green !important;}
 #big-circle .clean{
-}
+	color: #ffeedd;}
 #big-circle #red{
 	color: red;}
 #aber .aber{

@@ -1,18 +1,94 @@
 <html>
 <head>
   <style>
-  .box{
-    width:100px;
-    height:100px;
-    border:1px solid black;
-  }
   </style>
-  <link href = "style.css" rel="stylesheet" />
+  <link href = "trial.css" rel="stylesheet" />
+  <link href = "prism.css" rel = "stylesheet" />
 </head>
 <body>
-  <div class = "box colorTest">&nbsp;</div>
-  <div class = "box saturateTest">&nbsp;</div>
-  <div class = "box desaturateTest">&nbsp;</div>
-  <div class = "box spinTest">&nbsp;</div>
+  <script src = "prism.js"></script>
+  <div class = "title">LESS Compiler Results</div>
+  <hr />
+  <div class = "sub-title">Mixins</div>
+    <pre>
+      <code class = "language-css">
+        .border(){
+          border:2px solid black;
+        }
+      </code>
+    </pre>
+    <div>
+      <div>
+        <pre>
+          <code class = "language-css">
+            .mixin-border-one{
+              .border;
+              .colorIt(#27ae60);
+            }
+          </code>
+        </pre>
+      </div>
+      <div class = "mixin-border-one box">Green text</div>
+    </div>
+    <div>
+      <div class = "inline">
+        <pre>
+          <code class = "language-css">
+            .mixin-border-two{
+              .border;
+              .colorIt(#2980b9);
+            }
+          </code>
+        </pre>
+      </div>
+      <div class = "mixin-border-two box">Blue Text</div>
+    </div>
+    <hr />
+  <div class = "sub-title">Parameterized Mixins</div>
+  <pre>
+    <code class = "language-css">
+      .transform(@angle){
+        transform:rotate(@angle);
+      }
+
+      .transform-arith(@angle){
+        transform:rotate(@angle/10);
+      }
+    </code>
+  </pre>
+  <pre>
+    <code class = "language-css">
+      .boxTilt{
+        .transform(45deg);
+        .pomogrenate;
+      }
+    </code>
+  </pre>
+    <div class = "boxTilt box"></div>
+    <pre>
+      <code class = "language-css">
+      .boxTilt-two{
+        .transform-arith(45deg);
+        .pomogrenate;
+      }
+      </code>
+    </pre>
+    <div class = "boxTilt-two box"></div>
+    <hr />
+  <div class = "sub-title">Color functions</div>
+  <div class = "sub-sub-title">HSL colors</div>
+    <div class = "normalColor box"></div>
+    <div class = "sub-sub-title">Saturate</div>
+      <div class = "saturate box"></div>
+    <div class = "sub-sub-title">Desaturate</div>
+      <div class = "desaturate box"></div>
+    <div class = "sub-sub-title">Lighten</div>
+      <div class = "lightFunc box"></div>
+    <div class = "sub-sub-title">Darken</div>
+      <div class = "darkFunc box"></div>
+    <div class = "sub-sub-title">Spin Positive</div>
+      <div class = "spin box"></div>
+    <div class = "sub-sub-title">Spin Negative</div>
+      <div class = "spinNeg box"></div>
 </body>
 </html>

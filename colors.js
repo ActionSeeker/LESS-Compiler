@@ -80,6 +80,29 @@ function ColorLuminance(hex, lum) {
 	return rgb;
 }
 
+function hue(rgbArray){
+  //consists of an RGB array
+  red = rgbArray[0];
+  green = rgbArray[1];
+  blue = rgbArray[2];
+
+  var hrgb = Math.atan2(Math.sqrt(3)*(green - blue),2*red - green - blue);
+  return hrgb;
+}
+
+function lighten(hslArguments,lightPerc){
+  hslArguments[2] = hslArguments[2]+lightPerc;
+  return RGBtoHex(hslToRgb(hslArguments));
+}
+
+function darken(hslArguments,darkPerc){
+  hslArguments[2] = hslArguments[2] - darkPerc;
+  return RGBtoHex(hslToRgb(hslArguments));
+}
+
 module.exports.hslToRgb = hslToRgb;
 module.exports.RGBtoHex = RGBtoHex;
 module.exports.ColorLuminance = ColorLuminance;
+module.exports.hue = hue;
+module.exports.lighten = lighten;
+module.exports.darken = darken;
