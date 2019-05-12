@@ -1,52 +1,0 @@
-.inherit{
-	background: red;	color: green;	cursor: 900px;}
-.lightenExample{
-	color: #7ab8cd;}
-.darkenExample{
-	color: #5ca8c1;}
-.withHex{
-	color: #f6ffff;	background: rgba(34,45,5,0.8);}
-.angular{
-	transform: rotate(4deg);}
-.colorTest{
-	color: #6bb0c7;	background: #6bb0c7;}
-.saturateTest{
-	color: #80d3ef;	background: #80d3ef;}
-.desaturateTest{
-	color: #609eb3;	background: #020302;}
-.spinTest{
-	color: #f2a60d;	background: #c7826b;}
-.bandana{
-	size: 45px;	color: #abc;	border: 2px 2px 4px 5px  ;	transform: rotate(2.25deg);}
-.apple{
-	height: -5.199999999999999px;	border-style: dotted ;	size: 20px;	color: #AAA;	border: 3cm 2px 1px 4px   ;	transform: rotate(0.9000000000000001deg);}
-.clean{
-	clear: both;	color: #EEF;	transform: rotate(14.544deg);}
-#big-circle{
-	text-decoration: underline;	color: blue;}
-#small-circle{
-	size: 102px;	background: red;	cursor: 900px;	clear: both;	transform: rotate(14.544deg);	color: green !important;}
-mango,a{
-	color: #ffeedd;}
-#aber{
-	color: green !important;}
-ul{
-	color: blue;	background: url('/images/a.jpg');}
-.apple:after{
-	clear: both;	color: green !important;}
-#big-circle .clean{
-	color: #ffeedd;}
-#big-circle #red{
-	color: red;}
-#aber .aber{
-	color: red;}
-#aber .aber li{
-	background: gray;}
-#aber .aber br{
-	clear: both;}
-ul li{
-	transform-origin:  bottom;}
-ul li div{
-	text-decoration:  none;	color: red;}
-ul li div a{
-	transform: rotate(-87.00000000000001deg);}
