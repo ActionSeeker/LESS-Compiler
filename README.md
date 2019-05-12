@@ -1,4 +1,4 @@
-# Welcome to StackEdit!
+# noob-LESS-compiler
 
 Something I gave shot as a final year undergrad project.
 I'm ashamed of that version ( lol I'm not ). I've proudly buried it under the silly branch.
