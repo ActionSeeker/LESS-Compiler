@@ -1,16 +1,33 @@
 {
-  "name": "electron-app",
-  "version": "1.0.0",
+  "name": "noob-less-compiler",
+  "version": "1.0.1",
   "description": "",
-  "main": "main.js",
-  "dependencies": {
-    "pretty-bytes": "^2.0.1"
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "mocha --reporter spec **/*.spec.ts",
+    "dev": "npm run test"
   },
   "devDependencies": {
-    "electron-prebuilt": "^0.35.2"
+    "@types/chai": "^4.3.10",
+    "@types/mocha": "^10.0.4",
+    "@types/node": "^20.9.2",
+    "@types/xregexp": "^4.4.0",
+    "chai": "^4.3.10",
+    "coveralls": "^3.1.1",
+    "istanbul": "^0.4.5",
+    "mocha": "^10.2.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
   },
-  "scripts": {
-    "start": "electron main.js"
+  "prettier": {
+    "singleQuote": true
   },
-  "author": ""
+  "author": "Luv Karakoti <luv94.karakoti@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "xregexp": "^5.1.1"
+  }
 }
