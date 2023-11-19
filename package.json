@@ -8,8 +8,7 @@
   "scripts": {
     "build": "tsc",
     "test": "mocha --reporter spec **/*.spec.ts",
-    "dev": "npm run test",
-    "cover": "istanbul cover node_modules/mocha/bin/_mocha *.spec.ts -- -R spec"
+    "dev": "npm run test"
   },
   "devDependencies": {
     "@types/chai": "^4.3.10",
