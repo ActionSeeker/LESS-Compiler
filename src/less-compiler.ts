@@ -1,29 +1,31 @@
 import { FileSystemHandler } from './file-system-handler/file-system-handler';
 
-export class LessCompiler {
+export default class LessCompiler {
   private path: string;
-  private target?: string;
+
+  // private target?: string;
+
   private contents: string;
 
-  private _fsHandler: FileSystemHandler;
+  private fsHandler: FileSystemHandler;
 
-  public constructor(path: string, target?: string) {
+  public constructor(path: string) {
     this.initConstructors();
 
-    if (!this._fsHandler.fileExists(path)) {
+    if (!this.fsHandler.fileExists(path)) {
       throw new Error(`ENOENT: FIle ${path} path is invalid`);
     }
 
     this.path = path;
+  }
+
+  public parse(): this {
+    this.contents = this.fsHandler.readContents(this.path);
     return this;
   }
 
-  public parse() {
-    this.contents = this._fsHandler.readContents(this.path);
-  }
-
   private initConstructors(): this {
-    this._fsHandler = new FileSystemHandler();
+    this.fsHandler = new FileSystemHandler();
     return this;
   }
 }
