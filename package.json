@@ -8,21 +8,22 @@
   "scripts": {
     "build": "tsc",
     "test": "mocha --reporter spec **/*.spec.ts",
-    "dev": "npm run test"
+    "dev": "npm run test",
+    "lint": "./node_modules/.bin/eslint **/*.ts"
   },
   "devDependencies": {
     "@types/chai": "^4.3.10",
     "@types/mocha": "^10.0.4",
     "@types/node": "^20.9.2",
     "@types/xregexp": "^4.4.0",
+    "@typescript-eslint/eslint-plugin": "^5.62.0",
+    "@typescript-eslint/parser": "^5.62.0",
     "chai": "^4.3.10",
     "coveralls": "^3.1.1",
     "eslint": "^8.54.0",
     "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-airbnb-typescript": "^17.1.0",
     "eslint-plugin-import": "^2.29.0",
-    "eslint-plugin-jsx-a11y": "^6.8.0",
-    "eslint-plugin-react": "^7.33.2",
-    "eslint-plugin-react-hooks": "^4.6.0",
     "istanbul": "^0.4.5",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
